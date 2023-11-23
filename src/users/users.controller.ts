@@ -7,25 +7,37 @@ import { TYPES } from '../types';
 import { ILogger } from '../logger/logger.interface';
 import 'reflect-metadata';
 import { IUserController } from './users.controller.interface';
+import { UserLoginDto } from './dto/user-login.dto';
+import { UserRegisterDto } from './dto/user-register.dto';
+import { User } from './user.entity';
+import { IUserService } from './users.servise.interface';
+import { ValidateMIddleware } from '../common/validate.middleware';
 
 injectable();
 export class UserController extends BaseController implements IUserController {
 	routes: IControllerRoute[] = [
 		{ path: '/login', func: this.login, method: 'post' },
-		{ path: '/register', func: this.register, method: 'post' },
+		{ path: '/register', func: this.register, method: 'post', middlewares: [new ValidateMIddleware(UserRegisterDto)] },
 	];
 
-	constructor(@inject(TYPES.ILogger) private loggerService: ILogger) {
+	constructor(
+		@inject(TYPES.ILogger) private loggerService: ILogger,
+		@inject(TYPES.UserService) private userService: IUserService,
+	) {
 		super(loggerService);
 		this.bindRoutes(this.routes);
 	}
 
-	login(req: Request, res: Response, next: NextFunction): void {
-		console.log('Privet');
+	login(req: Request<{}, {}, UserLoginDto>, res: Response, next: NextFunction): void {
+		console.log(req.body);
 		next(new HTTPError(401, 'Ощибка авторизации', 'login'));
 	}
 
-	register(req: Request, res: Response, next: NextFunction): void {
-		this.ok(res, 'register');
+	async register({ body }: Request<{}, {}, UserRegisterDto>, res: Response, next: NextFunction): Promise<void> {
+		const result = await this.userService.createUser(body);
+		if (!result) {
+			return next(new HTTPError(422, 'Такой пользователь уже существует'));
+		}
+		this.ok(res, result);
 	}
 }

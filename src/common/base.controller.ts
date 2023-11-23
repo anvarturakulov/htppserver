@@ -19,10 +19,11 @@ export abstract class BaseController {
 
 	public send<T>(res: Response, code: number, message: T): ExpressReturnType {
 		res.type('application/json');
-		return res.sendStatus(code).json(message);
+		return res.status(code).json(message);
 	}
 
 	public ok<T>(res: Response, message: T): ExpressReturnType {
+		res.type('application/json');
 		return this.send<T>(res, 200, message);
 	}
 
@@ -33,8 +34,10 @@ export abstract class BaseController {
 	protected bindRoutes(routes: IControllerRoute[]): void {
 		for (const route of routes) {
 			this.logger.log(`[${route.method}] ${route.path} binding`);
+			const middleware = route.middlewares?.map((m) => m.execute.bind(m));
 			const handler = route.func.bind(this);
-			this._router[route.method](route.path, handler);
+			const pipeline = middleware ? [...middleware, handler] : handler;
+			this._router[route.method](route.path, pipeline);
 		}
 	}
 }

@@ -27,8 +27,9 @@
                 "semi": true,
                 "trailingComma": "all",
                 "bracketSpacing": true,
-                "printWidth": 100,
+                "printWidth": 120,
                 "endOfLine": "auto"
+                
             }
         ]
     }
