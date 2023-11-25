@@ -1,21 +1,23 @@
-import { inject } from 'inversify';
-import { IConfigService } from './config.servoce.interface';
-import { DotenvConfigOptions, DotenvConfigOutput, DotenvParseOutput, config } from 'dotenv';
+import { inject, injectable } from 'inversify';
+import { IConfigService } from './config.service.interface';
+import { DotenvConfigOutput, DotenvParseOutput, config } from 'dotenv';
 import { ILogger } from '../logger/logger.interface';
 import { TYPES } from '../types';
 
+@injectable()
 export class ConfigService implements IConfigService {
 	private config: DotenvParseOutput;
 	constructor(@inject(TYPES.ILogger) private logger: ILogger) {
 		const result: DotenvConfigOutput = config();
 		if (result.error) {
-			this.logger.error('Не удалось прочитать файл .env или он отсуствует');
+			this.logger.error('[ConfigService] Не удалось прочитать файл .env или он отсуствует');
 		} else {
+			this.logger.log('[ConfigService] Конфигурация .dotenv загружена');
 			this.config = result.parsed as DotenvParseOutput;
 		}
 	}
 
-	get<T extends number | string>(key: string) {
-		return this.config[key] as T;
+	get(key: string): string {
+		return this.config[key];
 	}
 }

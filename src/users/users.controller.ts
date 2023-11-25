@@ -16,7 +16,7 @@ import { ValidateMIddleware } from '../common/validate.middleware';
 injectable();
 export class UserController extends BaseController implements IUserController {
 	routes: IControllerRoute[] = [
-		{ path: '/login', func: this.login, method: 'post' },
+		{ path: '/login', func: this.login, method: 'post', middlewares: [new ValidateMIddleware(UserLoginDto)] },
 		{ path: '/register', func: this.register, method: 'post', middlewares: [new ValidateMIddleware(UserRegisterDto)] },
 	];
 
@@ -28,9 +28,12 @@ export class UserController extends BaseController implements IUserController {
 		this.bindRoutes(this.routes);
 	}
 
-	login(req: Request<{}, {}, UserLoginDto>, res: Response, next: NextFunction): void {
-		console.log(req.body);
-		next(new HTTPError(401, 'Ощибка авторизации', 'login'));
+	async login(req: Request<{}, {}, UserLoginDto>, res: Response, next: NextFunction): Promise<void> {
+		const result = await this.userService.validateUser(req.body);
+		if (!result) {
+			return next(new HTTPError(401, 'Ощибка авторизации', 'login'));
+		}
+		this.ok(res, {});
 	}
 
 	async register({ body }: Request<{}, {}, UserRegisterDto>, res: Response, next: NextFunction): Promise<void> {
@@ -38,6 +41,6 @@ export class UserController extends BaseController implements IUserController {
 		if (!result) {
 			return next(new HTTPError(422, 'Такой пользователь уже существует'));
 		}
-		this.ok(res, result);
+		this.ok(res, { email: result.email, id: result.id });
 	}
 }
