@@ -13,13 +13,15 @@ import { IUserService } from './users.servise.interface';
 import { ValidateMIddleware } from '../common/validate.middleware';
 import { sign } from 'jsonwebtoken';
 import { IConfigService } from '../config/config.service.interface';
+import { AuthMiddleware } from '../common/auth.middleware';
+import { AuthGuard } from '../common/auth.guard';
 
 injectable();
 export class UserController extends BaseController implements IUserController {
 	routes: IControllerRoute[] = [
 		{ path: '/login', func: this.login, method: 'post', middlewares: [new ValidateMIddleware(UserLoginDto)] },
 		{ path: '/register', func: this.register, method: 'post', middlewares: [new ValidateMIddleware(UserRegisterDto)] },
-		{ path: '/info', func: this.info, method: 'get', middlewares: [] },
+		{ path: '/info', func: this.info, method: 'get', middlewares: [new AuthGuard()] },
 	];
 
 	constructor(
@@ -50,7 +52,8 @@ export class UserController extends BaseController implements IUserController {
 	}
 
 	async info({ user }: Request, res: Response, next: NextFunction): Promise<void> {
-		this.ok(res, { email: user });
+		const userInfo = await this.userService.getUserInfo(user);
+		this.ok(res, { email: userInfo?.email, id: userInfo?.id });
 	}
 
 	private signJWT(email: string, secret: string): Promise<string> {
